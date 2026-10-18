@@ -6,30 +6,102 @@
   <title>Football Room Server</title>
   <style>
     body { background: #0b132b; color: #fff; font-family: sans-serif; padding: 20px; }
-    .card { background: #1c2541; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-    input { padding: 8px; width: 80%; margin-bottom: 10px; }
-    button { padding: 10px 15px; background: #00e676; border: none; font-weight: bold; cursor: pointer; }
+    .card { background: #1c2541; padding: 20px; border-radius: 8px; margin-bottom: 20px; max-width: 500px; }
+    input, select { padding: 8px; width: 100%; margin-bottom: 12px; box-sizing: border-box; background: #0b132b; color: #fff; border: 1px solid #3a506b; border-radius: 4px; }
+    button { padding: 10px 15px; background: #00e676; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; width: 100%; }
+    button:hover { background: #00c853; }
+    label { font-size: 14px; color: #48cae4; margin-bottom: 4px; display: block; }
+    .result { margin-top: 10px; padding: 10px; background: #0b132b; border-radius: 4px; border-left: 4px solid #00e676; }
   </style>
 </head>
 <body>
-  <h1>Football Room Server Prototype</h1>
+
+  <h1>Football Room Server</h1>
+
+  <!-- CREATE ROOM WITH MATCH SETTINGS -->
   <div class="card">
-    <h2>Create Room</h2>
-    <input type="text" id="roomName" placeholder="Room Name">
+    <h2>Create Match Room</h2>
+    
+    <label for="roomName">Room Name</label>
+    <input type="text" id="roomName" placeholder="e.g. Friendly Match Room">
+
+    <label for="matchLength">Match Length</label>
+    <select id="matchLength">
+      <option value="5 mins">5 Minutes</option>
+      <option value="10 mins" selected>10 Minutes</option>
+      <option value="15 mins">15 Minutes</option>
+    </select>
+
+    <label for="injuries">Injuries</label>
+    <select id="injuries">
+      <option value="On" selected>On</option>
+      <option value="Off">Off</option>
+    </select>
+
+    <label for="extraTime">Extra Time</label>
+    <select id="extraTime">
+      <option value="On" selected>On</option>
+      <option value="Off">Off</option>
+    </select>
+
+    <label for="penalties">PK (Penalties)</label>
+    <select id="penalties">
+      <option value="On" selected>On</option>
+      <option value="Off">Off</option>
+    </select>
+
     <button onclick="createRoom()">Create Room</button>
-    <p id="createdCode"></p>
+    <div id="createdResult" class="result" style="display:none;"></div>
   </div>
+
+  <!-- JOIN ROOM -->
+  <div class="card">
+    <h2>Join Room</h2>
+    <label for="joinCode">Enter Room Code</label>
+    <input type="text" id="joinCode" placeholder="e.g. 123456">
+    <button onclick="joinRoom()">Join Room</button>
+    <div id="joinResult" class="result" style="display:none;"></div>
+  </div>
+
   <script>
     async function createRoom() {
       const name = document.getElementById('roomName').value;
+      const settings = {
+        matchLength: document.getElementById('matchLength').value,
+        injuries: document.getElementById('injuries').value,
+        extraTime: document.getElementById('extraTime').value,
+        penalties: document.getElementById('penalties').value
+      };
+
       const res = await fetch('/api/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name, settings })
       });
+
       const data = await res.json();
+      const resultDiv = document.getElementById('createdResult');
       if(data.ok) {
-        document.getElementById('createdCode').innerText = 'Room Code: ' + data.room.code;
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `<strong>Room Created!</strong><br>Code: <code>${data.room.code}</code>`;
+      }
+    }
+
+    async function joinRoom() {
+      const code = document.getElementById('joinCode').value;
+      const res = await fetch('/api/rooms/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+
+      const data = await res.json();
+      const resultDiv = document.getElementById('joinResult');
+      resultDiv.style.display = 'block';
+      if(data.ok) {
+        resultDiv.innerHTML = `<strong>Joined Room:</strong> ${data.room.name}`;
+      } else {
+        resultDiv.innerHTML = `<span style="color:#ff5252;">${data.error || 'Failed to join room'}</span>`;
       }
     }
   </script>
